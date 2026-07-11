@@ -169,3 +169,34 @@ def top_product_by_category():
     conn.close()
     return [dict(row) for row in rows]
     
+# Soal 5: Klasifikasi Customer (CTE + CASE Statement)
+
+@app.get("/reports/customer-level")
+def customer_level():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        WITH customer_totals AS (
+            SELECT
+                c.nama,
+                SUM(o.jumlah * p.harga) AS total_belanja
+            FROM customers c
+            JOIN orders o ON o.customer_id = c.id
+            JOIN products p ON p.id = o.product_id
+            GROUP BY c.id, c.nama
+        )
+        SELECT
+            nama,
+            total_belanja,
+            CASE
+                WHEN total_belanja > 5000000 THEN 'VIP'
+                WHEN total_belanja BETWEEN 1000000 AND 5000000 THEN 'Regular'
+                ELSE 'Basic'
+            END AS level_customer
+        FROM customer_totals
+        ORDER BY total_belanja DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+    
