@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+ from fastapi import FastAPI, HTTPException
 from database import init_db, get_connection
 from models import ProductCreate, ProductUpdate, ProductResponse
 
@@ -240,3 +240,23 @@ def top_category():
         raise HTTPException(status_code=404, detail="No sales data found")
     return dict(row)
     
+
+# Tantangan Tambahan 3: Customer Beli Lebih dari Satu Jenis Produk
+
+@app.get("/reports/multi-product-customers")
+def multi_product_customers():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT
+            c.nama,
+            COUNT(DISTINCT o.product_id) AS jumlah_jenis_produk
+        FROM customers c
+        JOIN orders o ON o.customer_id = c.id
+        GROUP BY c.id, c.nama
+        HAVING COUNT(DISTINCT o.product_id) > 1
+        ORDER BY jumlah_jenis_produk DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
