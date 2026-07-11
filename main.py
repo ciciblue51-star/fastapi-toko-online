@@ -101,3 +101,36 @@ def customer_total():
     conn.close()
     return [dict(row) for row in rows]
     
+# Soal 3: Customer di Atas Rata-Rata Belanja (Subquery)
+
+@app.get("/reports/customer-above-average")
+def customer_above_average():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT nama, total_belanja
+        FROM (
+            SELECT
+                c.id,
+                c.nama,
+                SUM(o.jumlah * p.harga) AS total_belanja
+            FROM customers c
+            JOIN orders o ON o.customer_id = c.id
+            JOIN products p ON p.id = o.product_id
+            GROUP BY c.id, c.nama
+        ) AS customer_totals
+        WHERE total_belanja > (
+            SELECT AVG(total_per_customer)
+            FROM (
+                SELECT SUM(o.jumlah * p.harga) AS total_per_customer
+                FROM orders o
+                JOIN products p ON p.id = o.product_id
+                GROUP BY o.customer_id
+            )
+        )
+        ORDER BY total_belanja DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+    
