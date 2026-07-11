@@ -9,10 +9,7 @@ app = FastAPI(title="Toko Online API")
 def on_startup():
     init_db()
 
-
-# =========================================================
 # Soal 1: CRUD Dasar untuk Products
-# =========================================================
 
 @app.post("/products", response_model=ProductResponse)
 def create_product(product: ProductCreate):
@@ -82,4 +79,25 @@ def delete_product(product_id: int):
     cursor.execute("DELETE FROM products WHERE id = ?", (product_id,))
     conn.commit()
     conn.close()
-    return {"message": "Product deleted successfully"}
+    return {"message": "Product deleted successfully"}     
+    
+# Soal 2: Total Belanja Customers (JOIN + SUM)
+
+@app.get("/reports/customer-total")
+def customer_total():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT
+            c.nama,
+            SUM(o.jumlah * p.harga) AS total_belanja
+        FROM customers c
+        JOIN orders o ON o.customer_id = c.id
+        JOIN products p ON p.id = o.product_id
+        GROUP BY c.id, c.nama
+        ORDER BY total_belanja DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+    
