@@ -200,3 +200,19 @@ def customer_level():
     conn.close()
     return [dict(row) for row in rows]
     
+
+# Tantangan Tambahan 1: Produk yang Belum Pernah Dibeli
+
+@app.get("/reports/unsold-products")
+def unsold_products():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT p.id, p.nama_produk, p.kategori, p.harga
+        FROM products p
+        LEFT JOIN orders o ON o.product_id = p.id
+        WHERE o.id IS NULL
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
