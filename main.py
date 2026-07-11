@@ -216,3 +216,27 @@ def unsold_products():
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+
+# Tantangan Tambahan 2: Kategori dengan Total Penjualan Tertinggi
+
+@app.get("/reports/top-category")
+def top_category():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT
+            p.kategori,
+            SUM(o.jumlah * p.harga) AS total_penjualan
+        FROM products p
+        JOIN orders o ON o.product_id = p.id
+        GROUP BY p.kategori
+        ORDER BY total_penjualan DESC
+        LIMIT 1
+    """)
+    row = cursor.fetchone()
+    conn.close()
+    if row is None:
+        raise HTTPException(status_code=404, detail="No sales data found")
+    return dict(row)
+    
