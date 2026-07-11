@@ -134,3 +134,38 @@ def customer_above_average():
     conn.close()
     return [dict(row) for row in rows]
     
+# Soal 4: Produk Terlaris per Kategori (CTE)
+
+@app.get("/reports/top-product-by-category")
+def top_product_by_category():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        WITH product_sales AS (
+            SELECT
+                p.kategori,
+                p.nama_produk,
+                SUM(o.jumlah) AS total_terjual
+            FROM products p
+            JOIN orders o ON o.product_id = p.id
+            GROUP BY p.id, p.kategori, p.nama_produk
+        ),
+        ranked_sales AS (
+            SELECT
+                kategori,
+                nama_produk,
+                total_terjual,
+                RANK() OVER (
+                    PARTITION BY kategori
+                    ORDER BY total_terjual DESC
+                ) AS peringkat
+            FROM product_sales
+        )
+        SELECT kategori, nama_produk, total_terjual
+        FROM ranked_sales
+        WHERE peringkat = 1
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+    
